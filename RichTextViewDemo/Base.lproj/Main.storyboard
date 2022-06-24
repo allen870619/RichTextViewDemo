@@ -126,6 +126,10 @@
                         <outletCollection property="textCtrlList" destination="x2d-Ni-zDO" collectionClass="NSMutableArray" id="MQZ-Qk-chS"/>
                         <outletCollection property="textCtrlList" destination="We4-7R-Qzk" collectionClass="NSMutableArray" id="2o1-Ya-vXK"/>
                         <outletCollection property="textCtrlList" destination="PAl-DP-I8W" collectionClass="NSMutableArray" id="6eY-Mt-QTK"/>
+                        <outletCollection property="prghCtrlList" destination="v2Y-H2-fSd" collectionClass="NSMutableArray" id="pcs-Xd-ziA"/>
+                        <outletCollection property="prghCtrlList" destination="msJ-M1-u6q" collectionClass="NSMutableArray" id="PFU-eL-sRA"/>
+                        <outletCollection property="prghCtrlList" destination="FaH-dj-bj3" collectionClass="NSMutableArray" id="D7x-sf-7Lj"/>
+                        <outletCollection property="prghCtrlList" destination="TdJ-Zt-qli" collectionClass="NSMutableArray" id="jYI-Yq-zvb"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

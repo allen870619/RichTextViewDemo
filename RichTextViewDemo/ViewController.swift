@@ -12,10 +12,14 @@ class ViewController: KBShifterViewController, RichTextViewController {
     @IBOutlet weak var textView: UITextView!
     @IBOutlet weak var segFont: UISegmentedControl!
     @IBOutlet var textCtrlList: [UIButton]!
+    @IBOutlet var prghCtrlList: [UIButton]!
     
     // font
     private var fontSize: CGFloat = 16
     private let fontSizeList: [CGFloat] = [16, 20 ,24]
+    
+    // paragraph
+    var dotMode = false
     
     // protocol
     var mainTextView: UITextView{
@@ -104,7 +108,6 @@ class ViewController: KBShifterViewController, RichTextViewController {
         
         // U
         textCtrlList[3].addAction(UIAction{ [self] _ in
-            
             if selectedRange.length == 0{
                 let attr = mainTextView.typingAttributes[.underlineStyle] as? Int
                 mainTextView.typingAttributes[.underlineStyle] = attr == nil ? 1 : nil
@@ -112,6 +115,107 @@ class ViewController: KBShifterViewController, RichTextViewController {
                 setAttrWithKeepingPos(mainTextView){ [self] in
                     let attr = getAttribute(selectedRange, type: .underlineStyle) as? [(Int, NSRange)]
                     setAttribute(.underlineStyle, value: attr?.last?.0 == nil ? 1 : nil)
+                }
+            }
+        }, for: .touchUpInside)
+        
+        
+        // paragraph
+        prghCtrlList[0].addAction(UIAction{[self] _ in
+            
+            let origin = NSMutableAttributedString(attributedString: mainTextView.attributedText!)
+            let paragraph = mainTextView.attributedText.attributedSubstring(from: paragraphRange) as! NSMutableAttributedString
+            
+            // for new dot
+            var attrs: [NSAttributedString.Key: Any]?
+            if paragraphRange.length == 0{
+                attrs = mainTextView.typingAttributes
+                let dot = NSMutableAttributedString(string: "\u{2022} ")
+                dot.addAttributes(mainTextView.typingAttributes, range: NSRange(location: 0, length: 2))
+                origin.insert(dot, at: selectedRange.location)
+            }else{
+                dotMode = paragraph.string.first == "\u{2022}"
+                if dotMode{
+                    var range = paragraphRange
+                    range.length -= 1
+                    paragraph.deleteCharacters(in: NSRange(location: 0, length: 2))
+                    origin.replaceCharacters(in: paragraphRange, with: paragraph)
+                }else{
+                    paragraph.mutableString.insert("\u{2022} ", at: 0)
+                    let attrs = getAttribute(paragraphRange, type: .paragraphStyle).last?.0 as? NSMutableParagraphStyle
+                    attrs?.headIndent = attrs?.firstLineHeadIndent ?? 0 + 32
+                    
+                    setAttribute(.paragraphStyle, value: attrs, range: paragraphRange)
+                    origin.replaceCharacters(in: paragraphRange, with: paragraph)
+                }
+                
+            }
+            dotMode = !dotMode
+            mainTextView.attributedText = origin
+            if let attrs = attrs {
+                mainTextView.typingAttributes = attrs
+            }
+            
+        }, for: .touchUpInside)
+        
+        prghCtrlList[1].addAction(UIAction{[self] _ in
+            let textAttachment = NSTextAttachment()
+            textAttachment.image = UIImage(systemName: "circle.fill")
+            let origin = NSMutableAttributedString(attributedString: mainTextView.attributedText)
+            origin.insert(NSAttributedString(attachment: textAttachment), at: selectedRange.location)
+            mainTextView.attributedText = origin
+        }, for: .touchUpInside)
+        
+        prghCtrlList[2].addAction(UIAction{[self] _ in
+            var firstLine: CGFloat = 0
+            if paragraphRange.length == 0{
+                let style = mainTextView.typingAttributes[.paragraphStyle] as? NSParagraphStyle
+                firstLine = style?.firstLineHeadIndent ?? 0
+            }else{
+                if let styles = getAttribute(paragraphRange, type: .paragraphStyle) as? [(NSMutableParagraphStyle, NSRange)]{
+                    for i in styles{
+                        firstLine = max(firstLine, i.0.firstLineHeadIndent)
+                    }
+                }
+            }
+            
+            firstLine = firstLine >= 32 ? firstLine - 32 : 0
+            let newStyle = NSMutableParagraphStyle()
+            newStyle.firstLineHeadIndent = firstLine
+            newStyle.headIndent = firstLine + 20
+                        
+            if paragraphRange.length == 0{
+                mainTextView.typingAttributes[.paragraphStyle] = newStyle
+            }else{
+                setAttrWithKeepingPos(mainTextView){[self] in
+                    setAttribute(.paragraphStyle, value: newStyle, range: paragraphRange)
+                }
+            }
+        }, for: .touchUpInside)
+        
+        prghCtrlList[3].addAction(UIAction{[self] _ in
+            var firstLine: CGFloat = 0
+            if paragraphRange.length == 0{
+                let style = mainTextView.typingAttributes[.paragraphStyle] as? NSParagraphStyle
+                firstLine = style?.firstLineHeadIndent ?? 0
+            }else{
+                if let styles = getAttribute(paragraphRange, type: .paragraphStyle) as? [(NSMutableParagraphStyle, NSRange)]{
+                    for i in styles{
+                        firstLine = max(firstLine, i.0.firstLineHeadIndent)
+                    }
+                }
+            }
+            
+            firstLine += 32
+            let newStyle = NSMutableParagraphStyle()
+            newStyle.firstLineHeadIndent = firstLine
+            newStyle.headIndent = firstLine + 20
+            
+            if paragraphRange.length == 0{
+                mainTextView.typingAttributes[.paragraphStyle] = newStyle
+            }else{
+                setAttrWithKeepingPos(mainTextView){[self] in
+                    setAttribute(.paragraphStyle, value: newStyle, range: paragraphRange)
                 }
             }
         }, for: .touchUpInside)
@@ -162,13 +266,33 @@ extension ViewController: UITextViewDelegate{
             // get selection attribute
             if let attrList = getAttribute(selectedRange, type: .font) as? [FontRange] {
                 let set = Set(attrList.map { $0.font.pointSize })
-               
                 if set.count == 1, let size = set.first{
+                    fontSize = size
                     segFont.selectedSegmentIndex = fontSizeList.firstIndex(of: size) ?? 0
                 }else{
+                    fontSize = 16
                     segFont.selectedSegmentIndex = -1
                 }
             }
         }
     }
+    
+    //    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+    //        print(text)
+    //        if textView.text.last == "\n"{
+    //            if text.isEmpty{
+    //                dotMode = false
+    //            }
+    //        }
+    //        return true
+    //    }
+    //
+    //    func textViewDidChange(_ textView: UITextView) {
+    //        if dotMode && textView.text.last == "\n"{
+    //            let dot = NSMutableAttributedString(string: "\u{2022}")
+    //            let origin = NSMutableAttributedString(attributedString: mainTextView.attributedText!)
+    //            origin.append(dot)
+    //            mainTextView.attributedText = origin
+    //        }
+    //    }
 }
